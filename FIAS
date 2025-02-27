@@ -1,0 +1,404 @@
+local g = getinfo or debug.getinfo
+local d = false
+local h = {}
+
+local x, y
+
+setthreadidentity(2)
+
+for i, v in getgc(true) do
+    if typeof(v) == "table" then
+        local a = rawget(v, "Detected")
+        local b = rawget(v, "Kill")
+    
+        if typeof(a) == "function" and not x then
+            x = a
+            local o; o = hookfunction(x, function(c, f, n)
+                if c ~= "_" then
+                    if d then
+                        warn("Adonis AntiCheat flagged\nMethod: {c}\nInfo: {f}")
+                    end
+                end
+                return true
+            end)
+            table.insert(h, x)
+        end
+
+        if rawget(v, "Variables") and rawget(v, "Process") and typeof(b) == "function" and not y then
+            y = b
+            local o; o = hookfunction(y, function(f)
+                if d then
+                    warn("Adonis AntiCheat tried to kill (fallback): {f}")
+                end
+            end)
+            table.insert(h, y)
+        end
+    end
+end
+
+local o; o = hookfunction(getrenv().debug.info, newcclosure(function(...)
+    local a, f = ...
+    if x and a == x then
+        if d then
+            warn("Adonis bypassed using ZINS AC bypass")
+        end
+        return coroutine.yield(coroutine.running())
+    end
+    return o(...)
+end))
+
+setthreadidentity(8)
+
+local mt = getrawmetatable(game)
+local namecall1 = mt.__namecall
+
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    local caller = getfenv(2).script
+    if (method == "Kick" or method == "Destroy") and caller and caller:GetFullName() == "StarterPlayer.StarterCharacterScripts.Core" then
+        warn("Azure BYPASSED FIAS Auto Slam AC")
+        return
+    end
+    return namecall1(self, unpack(args))
+end)
+
+setreadonly(mt, true)
+
+local Library = loadstring(game:HttpGetAsync("https://github.com/ActualMasterOogway/Fluent-Renewed/releases/latest/download/Fluent.luau"))()
+local SaveManager = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/master/Addons/SaveManager.luau"))()
+local InterfaceManager = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/master/Addons/InterfaceManager.luau"))()
+
+local Window = Library:CreateWindow{
+    Title = "Azure ",
+    SubTitle = "kohnny",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(765, 495),
+    Resize = true,
+    MinSize = Vector2.new(470, 380),
+    Acrylic = false,
+    Theme = "Monokai Vibrant",
+    MinimizeKey = Enum.KeyCode.RightControl
+}
+
+local Tabs = {
+    Combat = Window:CreateTab{
+        Title = "Combat ",
+        Icon = "swords"
+    },
+    Other = Window:CreateTab{
+        Title = "Other",
+        Icon = "chevron-right"
+    },    
+    Settings = Window:CreateTab{
+        Title = "Settings  ",
+        Icon = "settings"
+    }
+}
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local LocalName = LocalPlayer.Name
+local GUID = HttpService:GenerateGUID()
+
+local function onCharacterAdded(newCharacter)
+    LocalCharacter = newCharacter
+end
+
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+local function getNearestPlayer()
+    local nearestPlayer = nil
+    local shortestDistance = math.huge
+
+    if LocalCharacter and LocalCharacter:FindFirstChild("HumanoidRootPart") then
+        local localPosition = LocalCharacter.HumanoidRootPart.Position
+
+        for index, player in next, Players:GetPlayers() do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local targetRoot = player.Character.HumanoidRootPart
+                local distance = (localPosition - targetRoot.Position).Magnitude
+
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearestPlayer = player
+                end
+            end
+        end
+    end
+
+    return nearestPlayer
+end
+
+local AutoSlamToggle = Tabs.Combat:CreateToggle("AutoSlamToggle", {Title = "Auto Slam/Neck Drop", Default = false })
+local VoidKillSlamToggle = Tabs.Combat:CreateToggle("VoidKillSlamToggle", {Title = "Void Kill Slam [Beta]", Default = false })
+local InfiniteStaminaToggle = Tabs.Combat:CreateToggle("InfiniteStaminaToggle", {Title = "Infinite Stamina [Will let you run after stamina runs out]", Default = false })
+local breakEarsToggle = Tabs.Other:CreateToggle("BreakEarsToggle", {Title = "break ears lmao [FE]", Default = false })
+local autoFarmToggle = Tabs.Combat:CreateToggle("AutoFarm", {Title = "AFK Auto Farm [Paid Soon]", Default = false})
+
+AutoSlamToggle:OnChanged(function(enabled)
+    getgenv().autoSlam = enabled
+end)
+
+task.spawn(function()
+    while task.wait() do
+        if not getgenv().autoSlam then
+            continue
+        end
+
+        if not LocalCharacter or not LocalCharacter:FindFirstChild("HumanoidRootPart") then
+            continue
+        end
+
+        local nearestPlayer = getNearestPlayer()
+        if nearestPlayer and nearestPlayer.Character and nearestPlayer.Character:FindFirstChild("HumanoidRootPart") and GUID then
+            local targetRoot = nearestPlayer.Character.HumanoidRootPart
+            local args = {
+                ["Character"] = nearestPlayer.Character,
+                ["Point"] = targetRoot.Position,
+                ["Hit"] = targetRoot,
+                ["Limb"] = "",
+                ["Classs"] = GUID,
+                ["Result"] = {
+                    Position = targetRoot.Position,
+                    Normal = Vector3.new(1, 0, 0),
+                    Material = Enum.Material.Plastic
+                }
+            }
+
+            local Live = workspace:FindFirstChild("Live")
+            if Live then
+                local PlayerLive = Live:FindFirstChild(LocalName)
+                if PlayerLive then
+                    PlayerLive.Core.Communicate[""]:FireServer("Slam", args)
+                end
+            end
+        end
+    end
+end)
+
+VoidKillSlamToggle:OnChanged(function(enabled)
+    getgenv().voidKillSlam = enabled
+
+    local player = game.Players.LocalPlayer
+
+    local function voidKillSlam(char)
+        task.spawn(function()
+            while getgenv().voidKillSlam do
+                task.wait()
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if hrp and humanoid then
+                    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+                        if track.Animation and tostring(track.Animation.AnimationId):find("17855214456") then
+                            local origCF = hrp.CFrame
+                            local downCF = origCF * CFrame.new(0, -20, 0)
+
+                            humanoid.PlatformStand = true
+                            humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+
+                            local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(0.3), {CFrame = downCF})
+                            tween:Play()
+                            tween.Completed:Wait()
+
+                            hrp.CFrame = origCF
+
+                            humanoid.PlatformStand = false
+                            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+
+                            break
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    local function onCharacterAdded(char)
+        if getgenv().voidKillSlam then
+            voidKillSlam(char)
+        end
+    end
+
+    if enabled then
+        if player.Character then
+            voidKillSlam(player.Character)
+        end
+        player.CharacterAdded:Connect(onCharacterAdded)
+    end
+end)
+
+InfiniteStaminaToggle:OnChanged(function(enabled)
+    getgenv().sprint = enabled
+    if enabled then
+        game:GetService("UserInputService").InputBegan:Connect(function(input)
+            if input.KeyCode == Enum.KeyCode.LeftShift and getgenv().sprint then
+                task.spawn(function()
+                    while getgenv().sprint and game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) do
+                        local ohString1 = "Sprint"
+                        local ohBoolean2 = true
+                        workspace.Live[LocalPlayer.Name].Core.Communicate['']:FireServer(ohString1, ohBoolean2)
+                        task.wait()
+                    end
+                end)
+            end
+        end)
+    end
+end)
+
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+local autoFarmREF = {}
+local GUID = HttpService:GenerateGUID()
+
+autoFarmToggle:OnChanged(function(enabled)
+    getgenv().autoFarm = enabled
+    for _, conn in pairs(autoFarmREF) do
+        if conn.Connected then
+            conn:Disconnect()
+        end
+    end
+    autoFarmREF = {}
+
+    local function startFarm()
+        spawn(function()
+            if LocalPlayer:FindFirstChildOfClass("Backpack"):FindFirstChild("Fight") then
+                LocalPlayer:FindFirstChildOfClass("Backpack"):FindFirstChild("Fight").Parent = LocalPlayer.Character
+            end
+
+            while getgenv().autoFarm do
+                task.wait()
+                workspace.FallenPartsDestroyHeight = 'nan'
+                if not LocalPlayer.Character then continue end
+                if not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or not LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then continue end
+
+                if LocalPlayer:FindFirstChildOfClass("Backpack"):FindFirstChild("Fight") and not LocalPlayer.Character:FindFirstChild("Fight") then
+                    LocalPlayer:FindFirstChildOfClass("Backpack"):FindFirstChild("Fight").Parent = LocalPlayer.Character
+                end
+
+                local target
+                do
+                    local lowestHealth = math.huge
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
+                            if player.Character:FindFirstChildOfClass("Humanoid").Health < lowestHealth then
+                                lowestHealth = player.Character:FindFirstChildOfClass("Humanoid").Health
+                                target = player
+                            end
+                        end
+                    end
+                end
+
+                local lastDamage = tick()
+                local lastHealth = target and target.Character and target.Character:FindFirstChildOfClass("Humanoid").Health or 0
+                while target and getgenv().autoFarm do
+                    if not target.Character or target.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then break end
+                    if target.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character:FindFirstChild("HumanoidRootPart").CFrame = target.Character:FindFirstChild("HumanoidRootPart").CFrame * CFrame.new(0, 0, -3)
+                        if workspace:FindFirstChild("Live") and workspace:FindFirstChild("Live"):FindFirstChild(LocalPlayer.Name) then
+                            local args = {
+                                Character = target.Character,
+                                Point = target.Character:FindFirstChild("HumanoidRootPart").CFrame.Position,
+                                Hit = target.Character:FindFirstChild("HumanoidRootPart"),
+                                Limb = "",
+                                Classs = GUID,
+                                Result = { Position = target.Character:FindFirstChild("HumanoidRootPart").CFrame.Position, Normal = Vector3.new(1, 0, 0), Material = Enum.Material.Plastic }
+                            }
+                            workspace:FindFirstChild("Live"):FindFirstChild(LocalPlayer.Name).Core.Communicate['']:FireServer("Slam", args)
+                        end
+
+                        for _, track in ipairs(LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):GetPlayingAnimationTracks()) do
+                            if track.Animation and tostring(track.Animation.AnimationId):find("17855214456") then
+                                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                                if hrp and humanoid then
+                                    local origCF = hrp.CFrame
+                                    local downCF = origCF * CFrame.new(0, -20, 0)
+                                    humanoid.PlatformStand = true
+                                    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+                                    local tween = TweenService:Create(hrp, TweenInfo.new(0.3), {CFrame = downCF})
+                                    tween:Play()
+                                    tween.Completed:Wait()
+                                    hrp.CFrame = origCF
+                                    humanoid.PlatformStand = false
+                                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                                end
+                            end
+                        end
+
+                        local currentHealth = target.Character:FindFirstChildOfClass("Humanoid").Health
+                        if currentHealth < lastHealth then
+                            lastDamage = tick()
+                            lastHealth = currentHealth
+                        end
+                        if tick() - lastDamage >= 5 then break end
+                    end
+                    task.wait()
+                end
+            end
+        end)
+    end
+
+    if enabled then
+        startFarm()
+        table.insert(autoFarmREF, LocalPlayer.CharacterAdded:Connect(function()
+            if getgenv().autoFarm then
+                startFarm()
+            end
+        end))
+    end
+end)
+
+breakEarsToggle:OnChanged(function(enabled)
+    getgenv().breakEars = enabled
+
+    local function onCharacterAdded(char)
+        spawn(function()
+            while getgenv().breakEars do
+                task.wait()
+                local player = game.Players.LocalPlayer
+                if player and player.Character then
+                    local ohString1 = "Swing"
+                    local ohTable2 = {["Limb"] = "RightHand"}
+                    workspace.Live[player.Name].Core.Communicate['']:FireServer(ohString1, ohTable2)
+                end
+            end
+        end)
+    end
+
+    if enabled then
+        local player = game.Players.LocalPlayer
+        player.CharacterAdded:Connect(onCharacterAdded)
+        if player.Character then
+            onCharacterAdded(player.Character)
+        end
+    end
+end)
+
+SaveManager:SetLibrary(Library)
+InterfaceManager:SetLibrary(Library)
+
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes{}
+
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Window:SelectTab(1)
+
+Library:Notify{
+    Title = "Azure Notification",
+    Content = "The script has fully loaded, report bugs in the discord server.",
+    Duration = 8
+}
+
+SaveManager:LoadAutoloadConfig()
